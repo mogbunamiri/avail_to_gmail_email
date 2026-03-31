@@ -1,32 +1,49 @@
-name: Avail Gmail → Zoho Sync
+name: Avail Gmail to Zoho Sync
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # every 30 minutes
-  workflow_dispatch:         # allows manual run
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
 
 jobs:
-  run-script:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run script
+      - name: Recreate Gmail files
+        run: |
+          cat > credentials.json <<'EOF'
+          ${{ secrets.GMAIL_CREDENTIALS_JSON }}
+          EOF
+
+          cat > gmail_token.json <<'EOF'
+          ${{ secrets.GMAIL_TOKEN_JSON }}
+          EOF
+
+      - name: Run sync
         env:
+          GMAIL_SUBJECT_PHRASE: ${{ vars.GMAIL_SUBJECT_PHRASE }}
+          GMAIL_FROM_FILTER: ${{ vars.GMAIL_FROM_FILTER }}
+          LOOKBACK_HOURS: ${{ vars.LOOKBACK_HOURS }}
+          DRY_RUN: ${{ vars.DRY_RUN }}
+          LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+          ZOHO_ACCOUNTS_BASE: ${{ vars.ZOHO_ACCOUNTS_BASE }}
+          ZOHO_CAMPAIGNS_BASE: ${{ vars.ZOHO_CAMPAIGNS_BASE }}
           ZOHO_CLIENT_ID: ${{ secrets.ZOHO_CLIENT_ID }}
           ZOHO_CLIENT_SECRET: ${{ secrets.ZOHO_CLIENT_SECRET }}
           ZOHO_REFRESH_TOKEN: ${{ secrets.ZOHO_REFRESH_TOKEN }}
           ZOHO_LIST_KEY: ${{ secrets.ZOHO_LIST_KEY }}
-        run: |
-          python avail_gmail_to_zoho_sync.py
+        run: python avail_gmail_to_zoho_sync.py
