@@ -2,7 +2,7 @@ name: Avail Gmail to Zoho Sync
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "17,47 * * * *"
   workflow_dispatch:
 
 jobs:
